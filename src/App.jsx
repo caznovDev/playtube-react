@@ -1,0 +1,1 @@
+import {Routes,Route} from 'react-router-dom';import Home from './pages/Home';import Watch from './pages/Watch';import Models from './pages/Models';export default function App(){return(<Routes><Route path="/" element={<Home/>}/><Route path="/watch/:id" element={<Watch/>}/><Route path="/models" element={<Models/>}/></Routes>);}

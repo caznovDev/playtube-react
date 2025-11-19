@@ -16,13 +16,14 @@ export default function Home() {
     async function fetchVideos() {
       setLoading(true);
       try {
-        const params = new URLSearchParams({
-          page: String(page),
-          limit: String(LIMIT),
-          sort,
-        });
-        const res = await fetch(`/api/videos?${params.toString()}`);
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("limit", String(LIMIT));
+        params.set("sort", sort);
+
+        const res = await fetch("/api/videos?" + params.toString());
         const data = await res.json();
+
         if (cancelled) return;
 
         setVideos(data);
@@ -30,11 +31,170 @@ export default function Home() {
       } catch (err) {
         console.error("Erro ao carregar vídeos:", err);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     fetchVideos();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, sort]);
+
+  const handlePrev = () => {
+    if (page > 1 && !loading) {
+      setPage((prev) => prev - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (hasMore && !loading) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  const handleSortChange = (event) => {
+    setSort(event.target.value);
+    setPage(1);
+  };
+
+  return (
+    <div>
+      {/* Cabeçalho / filtros */}
+      <div className="home-header">
+        <div className="home-title">Explorar vídeos</div>
+        <div className="home-filters">
+          <span style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+            Ordenar por:
+          </span>
+          <select
+            className="select"
+            value={sort}
+            onChange={handleSortChange}
+          >
+            <option value="recent">Mais recentes</option>
+            <option value="popular">Mais vistos</option>
+            <option value="random">Aleatório</option>
+          </select>
+
+          <button
+            className="btn"
+            type="button"
+            onClick={handlePrev}
+            disabled={page === 1 || loading}
+          >
+            ◀ Anterior
+          </button>
+          <button
+            className="btn"
+            type="button"
+            onClick={handleNext}
+            disabled={!hasMore || loading}
+          >
+            Próxima ▶
+          </button>
+
+          <span style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+            Página {page}
+          </span>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      {loading ? (
+        <SkeletonGrid />
+      ) : videos.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "2.5rem 0",
+            color: "#9ca3af",
+            fontSize: "0.9rem",
+          }}
+        >
+          Nenhum vídeo encontrado.
+          <br />
+          <span style={{ fontSize: "0.8rem" }}>
+            (Insira vídeos na tabela "videos" do D1)
+          </span>
+        </div>
+      ) : (
+        <div className="video-grid">
+          {videos.map((video) => (
+            <Link
+              key={video.id}
+              to={`/watch/${video.id}`}
+              className="video-card"
+            >
+              <div className="video-thumb">
+                {video.thumbnail_url && (
+                  <img
+                    src={video.thumbnail_url}
+                    alt={video.title}
+                  />
+                )}
+                {typeof video.duration_seconds === "number" && (
+                  <div className="video-duration">
+                    {formatDuration(video.duration_seconds)}
+                  </div>
+                )}
+              </div>
+
+              <div className="video-title">{video.title}</div>
+
+              <div className="video-meta">
+                {(video.channel_name || "Canal desconhecido") +
+                  " · " +
+                  formatViews(video.views)}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------- Skeleton ---------- */
+
+function SkeletonGrid() {
+  const placeholders = Array.from({ length: 8 });
+
+  return (
+    <div className="video-grid">
+      {placeholders.map((_, index) => (
+        <div key={index} className="video-card">
+          <div className="video-thumb skeleton-thumb" />
+          <div className="skeleton-line" />
+          <div
+            className="skeleton-line"
+            style={{ width: "60%" }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* -------- Utils ---------- */
+
+function formatDuration(seconds) {
+  if (!seconds && seconds !== 0) return "";
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  const padded = rest.toString().padStart(2, "0");
+  return `${minutes}:${padded}`;
+}
+
+function formatViews(value) {
+  if (!value) return "0 views";
+  if (value < 1000) return `${value} views`;
+  if (value < 1_000_000) return `${(value / 1000).toFixed(1)}K views`;
+  return `${(value / 1_000_000).toFixed(1)}M views`;
+}    fetchVideos();
 
     return () => {
       cancelled = true;

@@ -10,13 +10,12 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="app-shell">
+    <div className="flex min-h-screen bg-darkbg text-gray-100">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="app-main">
+      <div className="flex min-h-screen flex-1 flex-col md:ml-56">
         <Navbar onMenuToggle={() => setSidebarOpen(true)} />
-
-        <main className="app-main-inner">
+        <main className="flex-1 px-3 pb-6 pt-3 md:px-6">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/watch/:id" element={<Watch />} />

@@ -23,11 +23,15 @@ export default function Watch() {
           return;
         }
         const data = await res.json();
-        if (!cancelled) setVideo(data);
-      } catch (err) {
-        console.error("Erro ao carregar vídeo:", err);
+        if (!cancelled) {
+          setVideo(data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar vídeo:", error);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
@@ -40,48 +44,55 @@ export default function Watch() {
 
   if (loading) {
     return (
-      <div className="watch-container">
-        <div className="video-thumb skeleton-thumb" />
-        <div className="skeleton-line" style={{ marginTop: "1rem" }} />
-        <div className="skeleton-line" style={{ width: "40%" }} />
+      <div className="mx-auto max-w-5xl space-y-3 px-2">
+        <div className="aspect-video rounded-xl bg-neutral-900 animate-pulse" />
+        <div className="h-4 w-2/3 rounded-full bg-neutral-800 animate-pulse" />
+        <div className="h-3 w-1/3 rounded-full bg-neutral-900 animate-pulse" />
       </div>
     );
   }
 
   if (notFound || !video) {
     return (
-      <div className="watch-container">
-        <p style={{ color: "#9ca3af" }}>Vídeo não encontrado.</p>
+      <div className="flex justify-center py-10 text-sm text-gray-400">
+        Vídeo não encontrado.
       </div>
     );
   }
 
   return (
-    <div className="watch-container">
-      <video
-        className="watch-player"
-        src={video.video_url}
-        controls
-        autoPlay
-      />
-
-      <h1 className="watch-title">{video.title}</h1>
-
-      <div className="watch-meta">
-        {video.channel_name || "Canal desconhecido"} ·{" "}
-        {formatViews(video.views)}{" "}
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 px-2">
+      <div className="w-full">
+        <video
+          className="aspect-video w-full rounded-xl bg-black"
+          src={video.video_url}
+          controls
+          autoPlay
+        />
       </div>
 
-      {video.description && (
-        <div className="watch-description">{video.description}</div>
-      )}
+      <div>
+        <h1 className="text-lg font-semibold text-gray-100">
+          {video.title}
+        </h1>
+        <p className="mt-1 text-sm text-gray-400">
+          {(video.channel_name || "Canal desconhecido") +
+            " · " +
+            formatViews(video.views)}
+        </p>
+        {video.description && (
+          <p className="mt-3 whitespace-pre-wrap text-sm text-gray-200">
+            {video.description}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
 
-function formatViews(v) {
-  if (!v) return "0 views";
-  if (v < 1000) return `${v} views`;
-  if (v < 1_000_000) return `${(v / 1000).toFixed(1)}K views`;
-  return `${(v / 1_000_000).toFixed(1)}M views`;
+function formatViews(value) {
+  if (!value) return "0 views";
+  if (value < 1000) return `${value} views`;
+  if (value < 1_000_000) return `${(value / 1000).toFixed(1)}K views`;
+  return `${(value / 1_000_000).toFixed(1)}M views`;
 }

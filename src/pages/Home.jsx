@@ -1,40 +1,183 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+const LIMIT = 12;
+
 export default function Home() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [sort, setSort] = useState("recent");
+  const [hasMore, setHasMore] = useState(true);
 
-  // Carrega os vídeos do backend
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchVideos() {
+      setLoading(true);
       try {
-        const res = await fetch("/api/videos");
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(LIMIT),
+          sort,
+        });
+        const res = await fetch(`/api/videos?${params.toString()}`);
         const data = await res.json();
+        if (cancelled) return;
+
         setVideos(data);
+        setHasMore(data.length === LIMIT);
       } catch (err) {
         console.error("Erro ao carregar vídeos:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+
     fetchVideos();
-  }, []);
 
-  if (loading) {
-    return (
-      <div className="w-full text-center py-10 text-gray-300 text-lg">
-        Carregando vídeos...
+    return () => {
+      cancelled = true;
+    };
+  }, [page, sort]);
+
+  const handlePrev = () => {
+    if (page > 1) setPage((p) => p - 1);
+  };
+
+  const handleNext = () => {
+    if (hasMore) setPage((p) => p + 1);
+  };
+
+  const handleSortChange = (e) => {
+    setSort(e.target.value);
+    setPage(1);
+  };
+
+  return (
+    <div>
+      {/* Cabeçalho / filtros */}
+      <div className="home-header">
+        <div className="home-title">Explorar vídeos</div>
+
+        <div className="home-filters">
+          <span style={{ fontSize: "0.8rem", color: "#9ca3af" }}>Ordenar por:</span>
+          <select
+            className="select"
+            value={sort}
+            onChange={handleSortChange}
+          >
+            <option value="recent">Mais recentes</option>
+            <option value="popular">Mais vistos</option>
+            <option value="random">Aleatório</option>
+          </select>
+
+          <button
+            className="btn"
+            onClick={handlePrev}
+            disabled={page === 1 || loading}
+          >
+            ◀ Anterior
+          </button>
+          <button
+            className="btn"
+            onClick={handleNext}
+            disabled={!hasMore || loading}
+          >
+            Próxima ▶
+          </button>
+
+          <span style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+            Página {page}
+          </span>
+        </div>
       </div>
-    );
-  }
 
-  if (!videos.length) {
-    return (
-      <div className="w-full text-center py-10 text-gray-400">
-        Nenhum vídeo encontrado no banco.
-        <br />
-        <span className="text-sm">
+      {/* Conteúdo */}
+      {loading ? (
+        <SkeletonGrid />
+      ) : videos.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "2.5rem 0",
+            color: "#9ca3af",
+            fontSize: "0.9rem",
+          }}
+        >
+          Nenhum vídeo encontrado.
+          <br />
+          <span style={{ fontSize: "0.8rem" }}>
+            Insira vídeos na tabela <code>videos</code> do D1.
+          </span>
+        </div>
+      ) : (
+        <div className="video-grid">
+          {videos.map((v) => (
+            <Link
+              key={v.id}
+              to={`/watch/${v.id}`}
+              className="video-card"
+            >
+              <div className="video-thumb">
+                {v.thumbnail_url && (
+                  <img src={v.thumbnail_url} alt={v.title} />
+                )}
+
+                {v.duration_seconds != null && (
+                  <div className="video-duration">
+                    {formatDuration(v.duration_seconds)}
+                  </div>
+                )}
+              </div>
+
+              <div className="video-title">{v.title}</div>
+
+              <div className="video-meta">
+                {v.channel_name || "Canal desconhecido"} ·{" "}
+                {formatViews(v.views)}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------- Skeleton ---------- */
+
+function SkeletonGrid() {
+  const placeholders = Array.from({ length: 8 });
+
+  return (
+    <div className="video-grid">
+      {placeholders.map((_, idx) => (
+        <div key={idx} className="video-card">
+          <div className="video-thumb skeleton-thumb" />
+          <div className="skeleton-line" />
+          <div className="skeleton-line" style={{ width: "60%" }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* -------- Utils ---------- */
+
+function formatDuration(sec) {
+  if (!sec && sec !== 0) return "";
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatViews(v) {
+  if (!v) return "0 views";
+  if (v < 1000) return `${v} views`;
+  if (v < 1_000_000) return `${(v / 1000).toFixed(1)}K views`;
+  return `${(v / 1_000_000).toFixed(1)}M views`;
+      }        <span className="text-sm">
           (Insira via D1 Console ou API)
         </span>
       </div>

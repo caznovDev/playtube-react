@@ -1,41 +1,64 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-section-title">Navegar</div>
+    <>
+      {/* Overlay for mobile */}
+      {open && (
+        <div
+          className="sidebar-overlay"
+          onClick={onClose}
+        />
+      )}
 
-      <Link
-        to="/"
-        className="sidebar-link"
-        style={isActive("/") ? { background: "#27272a" } : undefined}
+      <aside
+        className={`sidebar-drawer ${open ? "open" : ""}`}
       >
-        🏠 <span>Início</span>
-      </Link>
+        <div className="sidebar-header">
+          <button className="close-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
 
-      <Link
-        to="/models"
-        className="sidebar-link"
-        style={isActive("/models") ? { background: "#27272a" } : undefined}
-      >
-        👩‍💻 <span>Modelos</span>
-      </Link>
+        <div className="sidebar-content">
+          <div className="sidebar-section-title">Browse</div>
 
-      <div className="sidebar-section-title">Outros</div>
+          <Link
+            to="/"
+            className="sidebar-link"
+            style={isActive("/") ? { background: "#27272a" } : null}
+            onClick={onClose}
+          >
+            🏠 Home
+          </Link>
 
-      <a
-        href="https://github.com/caznovDev"
-        target="_blank"
-        rel="noreferrer"
-        className="sidebar-link"
-      >
-        💻 <span>GitHub</span>
-      </a>
-    </aside>
+          <Link
+            to="/models"
+            className="sidebar-link"
+            style={isActive("/models") ? { background: "#27272a" } : null}
+            onClick={onClose}
+          >
+            👩‍💻 Models
+          </Link>
+
+          <div className="sidebar-section-title">Links</div>
+
+          <a
+            href="https://github.com/caznovDev"
+            className="sidebar-link"
+            target="_blank"
+            rel="noreferrer"
+            onClick={onClose}
+          >
+            💻 GitHub
+          </a>
+        </div>
+      </aside>
+    </>
   );
 }

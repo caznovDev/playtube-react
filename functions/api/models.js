@@ -1,0 +1,1 @@
+export async function onRequest(ctx){const db=ctx.env.DB;const {results}=await db.prepare('SELECT * FROM models').all();return Response.json(results);}

@@ -1,3 +1,14 @@
+// Small helper to always send JSON with CORS enabled
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    }
+  });
+}
+
 export async function onRequest(context) {
   const db = context.env.DB;
   const url = new URL(context.request.url);
@@ -10,10 +21,19 @@ export async function onRequest(context) {
   const sortParam = (url.searchParams.get("sort") || "recent").toLowerCase();
   let orderBy;
   switch (sortParam) {
-    case "popular": orderBy = "v.views DESC"; break;
-    case "oldest":  orderBy = "v.created_at ASC, v.id ASC"; break;
-    case "random":  orderBy = "RANDOM()"; break;
-    default:        orderBy = "v.created_at DESC, v.id DESC";
+    case "popular":
+      orderBy = "v.views DESC";
+      break;
+    case "oldest":
+      orderBy = "v.created_at ASC, v.id ASC";
+      break;
+    case "random":
+      orderBy = "RANDOM()";
+      break;
+    case "recent":
+    default:
+      orderBy = "v.created_at DESC, v.id DESC";
+      break;
   }
 
   const modelIdParam = url.searchParams.get("model_id");
@@ -23,31 +43,54 @@ export async function onRequest(context) {
 
   if (modelIdParam) {
     const id = parseInt(modelIdParam, 10);
-    if (!Number.isNaN(id)) { whereClauses.push("v.model_id = ?"); params.push(id); }
+    if (!Number.isNaN(id)) {
+      whereClauses.push("v.model_id = ?");
+      params.push(id);
+    }
   }
-  if (modelSlugParam) { whereClauses.push("m.slug = ?"); params.push(modelSlugParam); }
+
+  if (modelSlugParam) {
+    whereClauses.push("m.slug = ?");
+    params.push(modelSlugParam);
+  }
 
   const whereSql = whereClauses.length ? "WHERE " + whereClauses.join(" AND ") : "";
 
   const sql = `
-    SELECT v.id, v.slug, v.title, v.thumbnail_url, v.video_url,
-           v.channel_name, v.views, v.duration_seconds, v.description,
-           v.model_id, v.created_at,
-           m.id AS model_id_real, m.slug AS model_slug,
-           m.display_name AS model_name, m.avatar_url AS model_avatar
+    SELECT
+      v.id,
+      v.slug,
+      v.title,
+      v.thumbnail_url,
+      v.video_url,
+      v.channel_name,
+      v.views,
+      v.duration_seconds,
+      v.description,
+      v.model_id,
+      v.created_at,
+      m.id           AS model_id_real,
+      m.slug         AS model_slug,
+      m.display_name AS model_name,
+      m.avatar_url   AS model_avatar
     FROM videos v
     LEFT JOIN models m ON v.model_id = m.id
     ${whereSql}
     ORDER BY ${orderBy}
     LIMIT ? OFFSET ?
   `;
+
   params.push(limit, offset);
 
   try {
     const { results } = await db.prepare(sql).bind(...params).all();
-    return Response.json({ page, limit, count: results.length, items: results });
+    return jsonResponse({
+      page,
+      limit,
+      count: results.length,
+      items: results
+    });
   } catch (err) {
-    return new Response(JSON.stringify({ error:"DB error", detail:String(err)}),
-                        { status:500, headers:{ "Content-Type":"application/json"}});
+    return jsonResponse({ error: "DB error in /api/videos", detail: String(err) }, 500);
   }
 }

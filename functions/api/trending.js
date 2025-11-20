@@ -1,3 +1,14 @@
+// Small helper to always send JSON with CORS enabled
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    }
+  });
+}
+
 export async function onRequest(context) {
   const db = context.env.DB;
   const url = new URL(context.request.url);
@@ -29,15 +40,12 @@ export async function onRequest(context) {
 
   try {
     const { results } = await db.prepare(sql).bind(limit).all();
-    return Response.json({
+    return jsonResponse({
       limit,
       count: results.length,
       items: results
     });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "DB error in /api/trending", detail: String(err) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ error: "DB error in /api/trending", detail: String(err) }, 500);
   }
 }

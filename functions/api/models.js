@@ -17,7 +17,7 @@ export async function onRequest(context) {
       bio,
       created_at
     FROM models
-    ORDER BY created_at DESC
+    ORDER BY created_at DESC, id DESC
     LIMIT ? OFFSET ?
   `;
 

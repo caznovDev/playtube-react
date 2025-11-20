@@ -12,18 +12,21 @@ export async function onRequest(context) {
       v.id,
       v.slug,
       v.title,
-      v.description,
       v.thumbnail_url,
       v.video_url,
+      v.channel_name,
       v.views,
       v.duration_seconds,
+      v.description,
+      v.model_id,
       v.created_at,
-      m.id AS model_id,
-      m.slug AS model_slug,
+      m.id           AS model_id_real,
+      m.slug         AS model_slug,
       m.display_name AS model_name,
-      m.avatar_url AS model_avatar,
-      m.banner_url AS model_banner,
-      m.bio AS model_bio
+      m.avatar_url   AS model_avatar,
+      m.banner_url   AS model_banner,
+      m.bio          AS model_bio,
+      m.created_at   AS model_created_at
     FROM videos v
     LEFT JOIN models m ON v.model_id = m.id
     WHERE v.id = ?

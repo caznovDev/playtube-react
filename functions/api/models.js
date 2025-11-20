@@ -8,30 +8,16 @@ export async function onRequest(context) {
   const offset = (page - 1) * limit;
 
   const sql = `
-    SELECT
-      id,
-      slug,
-      display_name,
-      avatar_url,
-      banner_url,
-      bio,
-      created_at
+    SELECT id, slug, display_name, avatar_url, banner_url, bio, created_at
     FROM models
     ORDER BY created_at DESC, id DESC
     LIMIT ? OFFSET ?
   `;
-
   try {
     const { results } = await db.prepare(sql).bind(limit, offset).all();
-
-    return Response.json({
-      page,
-      limit,
-      count: results.length,
-      items: results,
-    });
+    return Response.json({ page, limit, count: results.length, items: results });
   } catch (err) {
-    console.error("Error in GET /api/models:", err);
-    return new Response("Internal error", { status: 500 });
+    return new Response(JSON.stringify({error:"DB error", detail:String(err)}),
+                        {status:500,headers:{"Content-Type":"application/json"}});
   }
 }

@@ -8,14 +8,12 @@ export async function onRequest(context) {
     return new Response("Invalid id", { status: 400 });
   }
 
-  // paginação para vídeos da model
   const page = Math.max(parseInt(url.searchParams.get("page") || "1", 10), 1);
   const limitRaw = parseInt(url.searchParams.get("limit") || "20", 10);
   const limit = Math.min(Math.max(limitRaw, 1), 50);
   const offset = (page - 1) * limit;
 
   try {
-    // 1) buscar model
     const modelSql = `
       SELECT
         id,
@@ -30,14 +28,11 @@ export async function onRequest(context) {
       LIMIT 1
     `;
     const modelRes = await db.prepare(modelSql).bind(numericId).all();
-
     if (!modelRes.results || modelRes.results.length === 0) {
       return new Response("Not found", { status: 404 });
     }
-
     const model = modelRes.results[0];
 
-    // 2) buscar vídeos da model
     const videosSql = `
       SELECT
         id,
@@ -45,15 +40,17 @@ export async function onRequest(context) {
         title,
         thumbnail_url,
         video_url,
+        channel_name,
         views,
         duration_seconds,
+        description,
+        model_id,
         created_at
       FROM videos
       WHERE model_id = ?
-      ORDER BY created_at DESC
+      ORDER BY created_at DESC, id DESC
       LIMIT ? OFFSET ?
     `;
-
     const videosRes = await db
       .prepare(videosSql)
       .bind(numericId, limit, offset)
@@ -72,4 +69,4 @@ export async function onRequest(context) {
     console.error("Error in GET /api/models/:id", err);
     return new Response("Internal error", { status: 500 });
   }
-        }
+}
